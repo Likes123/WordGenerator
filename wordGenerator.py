@@ -9,9 +9,9 @@ from googletrans import Translator
 def write_xml(file_name, ret):
     file_name = file_name+".xlsx"
     if os.path.isfile(file_name):
-        wb = openpyxl.load_workbook(file_name)
-    else:
-        wb = openpyxl.Workbook()
+        os.remove(file_name)
+
+    wb = openpyxl.Workbook()
     ws = wb.active
     i = 1
     # trans_list = []
@@ -44,7 +44,7 @@ def write_xml(file_name, ret):
     wb.save(filename=(file_name))
 
 
-def auto_generate_word(source_file, delete_file, is_use_eudic):
+def auto_generate_word(source_file, delete_file, is_use_eudic, filter_times):
     text = dict()
     file = open("data/"+source_file, "r")
     file_text = file.read()
@@ -75,11 +75,11 @@ def auto_generate_word(source_file, delete_file, is_use_eudic):
 
         dic = (dic-delete_text)
         for (key, value) in text.items():
-            if key in dic:
+            if key in dic and value > filter_times:  # 频率大于2
                 ret[key] = value
     else:
         for (key, value) in text.items():
-            if key not in delete_text:
+            if key not in delete_text and value > filter_times:
                 ret[key] = value
 
     file.close()
@@ -92,11 +92,20 @@ def main():
     ##############################
     is_use_eudic = False
     # source_file = "17.txt"
-    source_file = "大空头字幕.srt"
+    source_file = "thinking in java.txt"
     delete_file = "delete.txt"
+    filter_times = 3  # 出现频率小于3不出现
     ##############################
-    ret = auto_generate_word(source_file, delete_file, is_use_eudic)
-
+    print("============================================")
+    print("源文件："+source_file)
+    print("不显示的常用单词表："+delete_file)
+    print("只显示出现"+str(filter_times)+"以上的单词")
+    print("============================================")
+    print("生成单词列表中...")
+    ret = auto_generate_word(source_file, delete_file,
+                             is_use_eudic, filter_times)
+    print("一共有"+str(len(ret))+"个单词")
+    print("写入Excel文件...")
     write_xml("word_lists", ret)
 
 
