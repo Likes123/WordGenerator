@@ -39,6 +39,11 @@ def write_xml(file_name, ret):
     i = 0
     index = 1
     for (key, value) in ret.items():
+        if key[-1] == 's':  # 删除复数形式
+            key_temp = key[:-1]
+            if key_temp in ret:
+                i += 1
+                continue
         temp = trans_result_list[i]
         if not bool(re.search('[a-zA-Z\-]+', temp)):  # 翻译中含有英文，一般是没有翻译出，或者其他问题
             ws.cell(index, 1, key)
@@ -47,6 +52,7 @@ def write_xml(file_name, ret):
             index += 1
         i = i+1
 
+    print("一共有"+str(index)+"个单词")
     wb.save(filename=(file_name))
 
 
@@ -135,7 +141,6 @@ def main():
     print("生成单词列表中...")
     ret = auto_generate_word(source_file, delete_file,
                              is_use_eudic, filter_times)
-    print("一共有"+str(len(ret))+"个单词")
     print("翻译和写入Excel文件...")
     write_xml("word_lists", ret)
     print("完成！")
