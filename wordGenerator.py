@@ -40,7 +40,7 @@ def write_xml(file_name, ret):
     index = 1
     for (key, value) in ret.items():
         temp = trans_result_list[i]
-        if not bool(re.search('[a-zA-Z\-]', temp)):  # 翻译中含有英文，一般是没有翻译出，或者其他问题
+        if not bool(re.search('[a-zA-Z\-]+', temp)):  # 翻译中含有英文，一般是没有翻译出，或者其他问题
             ws.cell(index, 1, key)
             ws.cell(index, 2, value)
             ws.cell(index, 3, temp)
