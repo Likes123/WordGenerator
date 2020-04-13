@@ -88,9 +88,9 @@ def auto_generate_word(source_file, delete_file, is_use_eudic, filter_times):
 
     tree_city = ET.parse("data/en_city.xml")
     for elem in tree_city.iter(tag='CountryRegion'):
-        delete_name.add(elem.get("Name"))
+        delete_name.add(elem.get("Name").lower())
     for elem in tree_city.iter(tag='City'):
-        delete_name.add(elem.get("Name"))
+        delete_name.add(elem.get("Name").lower())
 
     # print(delete_name)
 
