@@ -39,11 +39,11 @@ def write_xml(file_name, ret):
     i = 0
     index = 1
     for (key, value) in ret.items():
-        if key[-1] == 's':  # 删除复数形式
-            key_temp = key[:-1]
-            if key_temp in ret:
-                i += 1
-                continue
+        # if key[-1] == 's':  # 删除复数形式，但是，也有不足，可能复数形式出现次数更多，排在前面
+        #     key_temp = key[:-1]
+        #     if key_temp in ret:
+        #         i += 1
+        #         continue
         temp = trans_result_list[i]
         if not bool(re.search('[a-zA-Z\-]+', temp)):  # 翻译中含有英文，一般是没有翻译出，或者其他问题
             ws.cell(index, 1, key)
