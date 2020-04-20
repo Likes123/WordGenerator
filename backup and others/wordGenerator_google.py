@@ -25,7 +25,7 @@ def write_xml(file_name, ret):
         # ws.cell(i, 1, key)
         # ws.cell(i, 2, value)
         trans = trans+key+". "
-        if(i % 200 == 0):  # google translator一次只允许翻译5000个字符，一般单词少于20个字符
+        if(i % 100 == 0):  # google translator一次只允许翻译5000个字符，一般单词少于20个字符
             trans_result = trans_result + \
                 translator.translate(trans, dest='zh-CN').text
             trans = ""
@@ -36,7 +36,14 @@ def write_xml(file_name, ret):
             translator.translate(trans, dest='zh-CN').text
 
     # 翻译后变成中文逗号，不用空格分隔，避免上下文联系，，，，实际上更复杂，试验后发现使用句号上下文联系最少，如果使用特殊符号，google翻译会自动清楚，怪google太智能 orz
+
+    # trans_result = re.sub('[\n\t.]+', '', trans_result)
     trans_result_list = trans_result.split("。")
+    # trans_result_list.append("x")
+    # trans_result_list.append("x")
+    print(len(trans_result_list))
+    print(trans_result_list)
+    print(len(ret))
 
     tree = ET.parse("data/udicWord.xml")
     udic = set()
@@ -138,8 +145,8 @@ def main():
     # need set
     ##############################
     # is_use_eudic = False
-    # source_file = "17.txt"
-    source_file = "12 rules for life.txt"
+    source_file = "1.txt"
+    # source_file = "thinking in java.txt"
     delete_file = "delete.txt"
     filter_times = 0  # 出现频率小于等于3不出现
     ##############################
