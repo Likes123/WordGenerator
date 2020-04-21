@@ -40,6 +40,8 @@ pat_ve = re.compile("(?<=[a-zA-Z])\'ve")
 
 lmtzr = WordNetLemmatizer()
 
+global index_word
+global can_use_online_translate
 
 def get_words(file):
     with open(file, encoding='utf-8') as f:
@@ -119,12 +121,16 @@ def fetch(query_str):
     query = {'q': "".join(query_str)}  # list --> str: "".join(list)
     url = 'https://fanyi.youdao.com/openapi.do?keyfrom=11pegasus11&key=273646050&type=data&doctype=json&version=1.1&' + \
           urlencode(query)
+
+    proxies = {'http': 'http://127.0.0.1:1080'}
+
     response = urlopen(url, timeout=3)
     html = response.read().decode('utf-8')
     return html
 
-index_word=1
+
 def parse(html, word, count):
+    return_ret = ""
     d = json.loads(html)
     global index_word
     try:
@@ -137,31 +143,74 @@ def parse(html, word, count):
             sheet.cell(row=index_word, column=3).value = result
             if word in eudic_dict:
                 sheet.cell(row=index_word, column=1).font = color_font
-                sheet.cell(row=index_word, column=2).font = color_font
-                sheet.cell(row=index_word, column=3).font = color_font
+                # sheet.cell(row=index_word, column=2).font = color_font
+                # sheet.cell(row=index_word, column=3).font = color_font
 
-            index_word=index_word+1
+            index_word = index_word + 1
 
             for i in explains:
                 print(i)
+
+            return_ret = result
         else:
             print('无法翻译!****')
             if show_translate_error_word:
                 sheet.cell(row=index_word, column=1).value = word
+                if word in eudic_dict:
+                    sheet.cell(row=index_word, column=1).font = color_font
                 # sheet.cell(row=index_word, column=3).value = ' '  # 若无法翻译，则空出来
                 index_word = index_word + 1
     except:
         print('****翻译出错!')  # 若无法翻译，则空出来
         if show_translate_error_word:
             sheet.cell(row=index_word, column=1).value = word
+            if word in eudic_dict:
+                sheet.cell(row=index_word, column=1).font = color_font
             # sheet.cell(row=index_word, column=3).value = ' '
             index_word = index_word + 1
+
+    return return_ret
+
+
+
+
+def local_translate(word, count):
+    global index_word
+
+    sheet.cell(row=index_word, column=1).value = word
+    if word in eudic_dict:
+        sheet.cell(row=index_word, column=1).font = color_font
+
+    sheet.cell(row=index_word, column=2).value = count
+
+    global can_use_online_translate
+    if word in local_dict.keys():
+        sheet.cell(row=index_word, column=3).value = local_dict[word]
+        index_word = index_word + 1
+
+    elif can_use_online_translate:
+        try:
+            online_result = parse(fetch(word), word, count)
+            # add_local_dict_ret=""
+            if online_result != "":
+                add_local_dict_ret = word + "####1::" + online_result + '\n'
+
+            else:  # 一次翻译不出，第二次也翻译不出，直接放入词典，避免在线查找
+                add_local_dict_ret = word + "####-1::" + " " + '\n'  # -1表示即使在线查找也没有结果
+            local_dict_file.write(add_local_dict_ret)
+        except:
+            print("online parse word error: " + word)
+            print("youdao translate online limit, can not use online ")
+            can_use_online_translate = False
+            # out.save(outputFile)
 
 
 def translate_and_write_to_file(words):
     num = 1
     for item in words:
         word, count = item
+        if len(word) <= num_char_fliter or count <= rate_fliter:
+            continue
         if word in filter_dict:
             continue
         if (word != None):
@@ -169,7 +218,15 @@ def translate_and_write_to_file(words):
             print(num, end='')
             print('个单词')
             print(word)
-            parse(fetch(word), word, count)
+            if use_online_translate:
+                try:
+                    parse(fetch(word), word, count)
+                except:
+                    print("parse word error: " + word)
+                    out.save(outputFile)
+            else:
+                local_translate(word, count)
+
             num += 1
             print()
         else:
@@ -200,29 +257,67 @@ def get_eudic_dict(eudicWordFile):
     file.close()
 
 
+def get_local_dict():
+    file = open(localDictFile, 'r', encoding='utf-8')
+    local_dict_list = file.read().split('\n')
+    # print(local_dict_list[36325])
+    # print(local_dict_list[36324])
+    local_dict_list = local_dict_list[:-1]
+    # print(local_dict_list[-1])
+    for line in local_dict_list:
+        temp = line.split("####")
+        temp2 = temp[1].split("::")
+        if temp2[0] != '0':
+            local_dict[temp[0]] = temp2[1]
+
+    file.close()
+
+
 if __name__ == '__main__':
-    # nltk.download('punkt')
-    inputFile = "data/17.txt"
-    outputFile = "result.xlsx"
+    # inpuFiles = ["1.txt", "17.txt", "大空头字幕.srt", "thinking in java.txt"]
+    inpuFiles = ["thinking in java.txt"]
     filterFiles = ["fliter_city.txt", "fliter_first_name.txt", "fliter_second_name.txt", "fliter_simple_words.txt",
                    "fliter_others.txt"]
     eudicWordFile = "eudic_words.txt"
-    show_translate_error_word=False
+    num_char_fliter = 3  # 长度小于等于num_char_fliter不会显示
+    rate_fliter = 0  # 出现次数小于rate_fliter，不显示
+    use_online_translate = False  # if fase, first use local dict, then use online dict
+    show_translate_error_word = True
+
+    localDictFile = "data/local_dict.txt"
+
     ##########################
-    if os.path.isfile(outputFile):
-        os.remove(outputFile)
-    print("counting...")
-    words = get_words(inputFile)
-    print("translate and writing file...")
-    out = Workbook()
-    sheet = out.active
+    global index_word
+    global can_use_online_translate
+    for inputFile in inpuFiles:
+        index_word = 1
+        can_use_online_translate = True
+        print(inputFile + " start...")
+        outputFile = inputFile + "_result.xlsx"
+        inputFile = "data/" + inputFile
 
-    filter_dict = set()
-    eudic_dict = set()
-    get_filter_dict(filterFiles)
-    get_eudic_dict(eudicWordFile)
-    color_font = Font(color=RED)
+        local_dict = dict()
+        if not use_online_translate:
+            get_local_dict()
 
-    translate_and_write_to_file(words.most_common())
+        local_dict_file = open(localDictFile, 'a', encoding='utf-8')  # if online trans have, add to local dict
 
-    out.save(outputFile)
+        if os.path.isfile(outputFile):
+            os.remove(outputFile)
+        print("counting...")
+        words = get_words(inputFile)
+        print("there are " + str(len(words)) + " words")
+        print("translate and writing file...")
+        out = Workbook()
+        sheet = out.active
+
+        filter_dict = set()
+        eudic_dict = set()
+        get_filter_dict(filterFiles)
+        get_eudic_dict(eudicWordFile)
+        color_font = Font(color=RED)
+
+        translate_and_write_to_file(words.most_common())
+
+        local_dict_file.close()
+        out.save(outputFile)

@@ -1,2 +1,4 @@
 .idea
+*.xlsx
+localDict/.idea
 result.xlsx
