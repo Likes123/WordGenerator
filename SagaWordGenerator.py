@@ -43,6 +43,7 @@ lmtzr = WordNetLemmatizer()
 global index_word
 global can_use_online_translate
 
+
 def get_words(file):
     with open(file, encoding='utf-8') as f:
         words_box = []
@@ -172,8 +173,6 @@ def parse(html, word, count):
     return return_ret
 
 
-
-
 def local_translate(word, count):
     global index_word
 
@@ -184,7 +183,7 @@ def local_translate(word, count):
     sheet.cell(row=index_word, column=2).value = count
 
     global can_use_online_translate
-    if word in local_dict.keys():
+    if word in local_dict.keys() and local_dict[word] != "":
         sheet.cell(row=index_word, column=3).value = local_dict[word]
         index_word = index_word + 1
 
@@ -275,7 +274,7 @@ def get_local_dict():
 
 if __name__ == '__main__':
     # inpuFiles = ["1.txt", "17.txt", "大空头字幕.srt", "thinking in java.txt"]
-    inpuFiles = ["thinking in java.txt"]
+    inpuFiles = ["增加单词.txt"]
     filterFiles = ["fliter_city.txt", "fliter_first_name.txt", "fliter_second_name.txt", "fliter_simple_words.txt",
                    "fliter_others.txt"]
     eudicWordFile = "eudic_words.txt"
